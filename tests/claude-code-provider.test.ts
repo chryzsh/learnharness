@@ -18,15 +18,23 @@ function createCollection() {
 	return collection;
 }
 
-test("lists exactly the opus, sonnet and haiku aliases", () => {
+test("lists the aliases followed by the exact model IDs", () => {
 	const models = createCollection().getModels(CLAUDE_CODE_PROVIDER);
 	assert.deepEqual(
 		models.map((m) => m.id),
-		["opus", "sonnet", "haiku"],
+		[
+			"opus", "sonnet", "haiku", "fable",
+			"claude-fable-5-1", "claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-5-5",
+			"claude-opus-4-8", "claude-opus-4-6",
+		],
 	);
 	assert.deepEqual(
 		models.map((m) => m.name),
-		["Claude Opus", "Claude Sonnet", "Claude Haiku"],
+		[
+			"Claude Opus", "Claude Sonnet", "Claude Haiku", "Claude Fable",
+			"Claude Fable 5.1", "Claude Opus 5.5", "Claude Sonnet 5.5", "Claude Haiku 5.5",
+			"Claude Opus 4.8", "Claude Opus 4.6",
+		],
 	);
 });
 
@@ -53,5 +61,5 @@ test("every cost field is zero", () => {
 test("auth resolves as configured without any key", async () => {
 	const collection = createCollection();
 	assert.ok(await collection.checkAuth(CLAUDE_CODE_PROVIDER));
-	assert.equal((await collection.getAvailable(CLAUDE_CODE_PROVIDER)).length, 3);
+	assert.equal((await collection.getAvailable(CLAUDE_CODE_PROVIDER)).length, 10);
 });
