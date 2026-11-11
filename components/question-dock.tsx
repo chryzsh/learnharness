@@ -18,10 +18,18 @@ import { mdComponents } from "@/components/md-blocks";
 // <button> (its link-safety prompt). A link inside an option label would nest
 // a button in a button, which is invalid HTML. Options are for picking, not
 // for following links, so show link text as plain text.
-const optionMdComponents = {
-	...mdComponents,
-	a: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
-};
+// Built on first render, not at import: md-blocks is in an import cycle with
+// this file, so mdComponents is not initialized yet when this module loads.
+function buildOptionMdComponents() {
+	return {
+		...mdComponents,
+		a: ({ children }: { children?: React.ReactNode }) => <span>{children}</span>,
+	};
+}
+let optionMdComponentsCache: ReturnType<typeof buildOptionMdComponents> | undefined;
+function optionMdComponents() {
+	return (optionMdComponentsCache ??= buildOptionMdComponents());
+}
 import { cn } from "@/lib/utils";
 import {
 	buildAnswer,
@@ -683,7 +691,7 @@ function QuestionDockForm({
 										)}
 									</span>
 									<span>
-										<ToolContentResponse components={optionMdComponents}>{opt.label}</ToolContentResponse>
+										<ToolContentResponse components={optionMdComponents()}>{opt.label}</ToolContentResponse>
 										{kind !== "quiz" && opt.description && (
 											// Option subtext renders in Source Sans 3 (owner's mockup);
 											// the "I don't know" copy stays JetBrains Mono. QUIZ options render
@@ -692,7 +700,7 @@ function QuestionDockForm({
 											// records must not leak either. Same MessageResponse path as the
 											// label (owner, 2026-10-12): descriptions are full markdown —
 											// LaTeX included — not plain text.
-											<ToolContentResponse components={optionMdComponents} className="lh-prose block text-xs text-muted-foreground">
+											<ToolContentResponse components={optionMdComponents()} className="lh-prose block text-xs text-muted-foreground">
 												{opt.description}
 											</ToolContentResponse>
 										)}
