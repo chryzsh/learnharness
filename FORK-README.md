@@ -1,10 +1,10 @@
 # Fork notes
 
-This fork runs LearnHarness 0.6.0 with five changes that are not in a release yet.
+This fork runs LearnHarness 0.6.1 with five changes that are not in a release yet.
 
 ## What is in the fork
 
-The `dev` branch starts from v0.5.0 (commit `713377f`) and merges five branches. After that, it merges the upstream release v0.6.0 (commit `a636647`).
+The `dev` branch starts from v0.5.0 (commit `713377f`) and merges five branches. After that, it merges the upstream releases v0.6.0 (commit `a636647`) and v0.6.1 (commit `50b0c42`, 2026-11-14). v0.6.1 has no data format change.
 
 | Branch | Change |
 | --- | --- |
@@ -26,6 +26,7 @@ On `dev` (commit `598f99f`, 2026-11-11), typecheck and lint pass. The tests give
 | --- | --- |
 | `~/Library/Application Support/LearnHarness/` | Data and keys of the installed app. |
 | `~/opt/ai/learnharness-data/` | Data and keys of the fork: `data/`, `auth.json` and the server log `dev.log`. |
+| `~/opt/ai/learnharness-data/data/plugins/learnharness-git/` | The Git backup plugin (heohlee/learnharness-git v0.1.1, release zip). It backs up the fork's `data/` to the private repo `chryzsh/learnharness-data` every 10 minutes. `auth.json` is outside `data/`, so it is not backed up. |
 | `~/LearnHarness-backup-2026-11-07/` | Backup of the installed app's `data/` and `auth.json`, taken on 2026-11-07. |
 
 The `auth.json` files hold your keys in plain text. Keep these folders out of every git repo.
