@@ -81,7 +81,7 @@ describe("PracticeDock", () => {
 		const html = renderToStaticMarkup(
 			<PracticeDock
 				problemCallId="call_p1"
-				input={{ statement: "\nShow that the sum is even.\n\nUse parity." }}
+				input={{ statement: "\n## Show that the **sum** is `even`.\n\nUse parity." }}
 				expanded={true}
 				attempted={true}
 				onExpand={() => {}}

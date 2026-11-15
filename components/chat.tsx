@@ -2635,11 +2635,15 @@ export function DockOverlay({
 
 	// The reserve grows immediately, but never shrinks while a question or
 	// practice problem owns the dock: shrinking flow space could pin a nearby
-	// learner back to the bottom. Composer mode may give space back.
+	// learner back to the bottom. Composer mode may give space back. So may a
+	// practice dock while the learner is AT the bottom: the reply mode
+	// collapses the statement there, and nothing can jump.
 	const reserveRef = useRef(0);
+	const practiceRef = useRef(!!practice);
+	practiceRef.current = !!practice;
 	const offer = useCallback((blockH: number) => {
 		const next = blockH + GRADIENT_H;
-		if (next <= reserveRef.current + 0.5 && pendingRef.current) return;
+		if (next <= reserveRef.current + 0.5 && pendingRef.current && !(practiceRef.current && atBottomRef.current)) return;
 		// Stamp growth at the source, including child-only field resizes, so
 		// stick-to-bottom's catch-up is not mistaken for the learner leaving.
 		if (shouldStampGeometryMute(next, reserveRef.current, pendingRef.current)) geometryAtRef.current = Date.now();

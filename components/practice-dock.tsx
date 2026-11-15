@@ -69,9 +69,12 @@ export interface PracticeDockProps {
 	attempted?: boolean;
 }
 
-/** The first non-empty line of the statement, for the collapsed toggle. */
-function firstLine(statement: string): string {
-	return statement.split("\n").map(line => line.trim()).find(Boolean) ?? "";
+/** The first non-empty line of the statement as plain text, for the
+ *  collapsed toggle: heading, quote and list markers, emphasis and code
+ *  ticks removed. */
+export function firstLine(statement: string): string {
+	const line = statement.split("\n").map(l => l.trim()).find(Boolean) ?? "";
+	return line.replace(/^(#+|>|[-*+]|\d+\.)\s+/, "").replace(/\*\*|__|`/g, "");
 }
 
 export function PracticeDock({ viewReader, problemCallId, input, expanded, onExpand, onSubmit, onPrepareSubmission, customInput, hasPendingInput = false, preparing = false, onEscape, compactionRunning = false, attempted = false }: PracticeDockProps) {
