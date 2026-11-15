@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import type { ViewReaderRef } from "./session-view-readers";
 import { ChevronRightIcon } from "lucide-react";
 import { ToolContentResponse } from "@/components/ai-elements/message";
@@ -63,9 +63,18 @@ export interface PracticeDockProps {
 	 *  and say so in the hint row. The server registry is the real gate;
 	 *  this is the affordance. */
 	compactionRunning?: boolean;
+	/** The learner already submitted on this problem: the agent's
+	 *  follow-up is in the chat above, so the statement shrinks to one
+	 *  line and the field becomes a reply. */
+	attempted?: boolean;
 }
 
-export function PracticeDock({ viewReader, problemCallId, input, expanded, onExpand, onSubmit, onPrepareSubmission, customInput, hasPendingInput = false, preparing = false, onEscape, compactionRunning = false }: PracticeDockProps) {
+/** The first non-empty line of the statement, for the collapsed toggle. */
+function firstLine(statement: string): string {
+	return statement.split("\n").map(line => line.trim()).find(Boolean) ?? "";
+}
+
+export function PracticeDock({ viewReader, problemCallId, input, expanded, onExpand, onSubmit, onPrepareSubmission, customInput, hasPendingInput = false, preparing = false, onEscape, compactionRunning = false, attempted = false }: PracticeDockProps) {
 	const controller = useOptionalInteractionLayers();
 	const rootRef = useRef<HTMLElement>(null);
 	const [nativeThinking, setNativeThinking] = useState("");
@@ -77,6 +86,9 @@ export function PracticeDock({ viewReader, problemCallId, input, expanded, onExp
 	// the tail, never a stale closure.
 	const thinkingRef = useRef(thinking); thinkingRef.current = thinking;
 	const editRevision = useRef(0);
+	const [statementOpen, setStatementOpen] = useState(false);
+	useEffect(() => { setStatementOpen(false); }, [problemCallId]);
+	const statementCollapsed = attempted && !statementOpen;
 	useLayoutEffect(() => {
 		if (!viewReader) return;
 		const read = () => thinkingRef.current;
@@ -146,12 +158,36 @@ export function PracticeDock({ viewReader, problemCallId, input, expanded, onExp
 			    cards' label row — owner round, 2026-10-05) + the statement,
 			    markdown + LaTeX rendered, capped by the measured column
 			    (--dock-max-h; the old fixed 40vh cut long problems short). */}
-			<div data-dock-scroll-area="" className="max-h-[var(--dock-max-h,40vh)] overflow-y-auto px-4 pt-3 pb-2">
-				<div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Problem</div>
-				<div className="lh-prose text-[15px]">
-					<ToolContentResponse>{input.statement}</ToolContentResponse>
+			{statementCollapsed ? (
+				<button
+					type="button"
+					data-testid="practice-statement-toggle"
+					onClick={() => setStatementOpen(true)}
+					className="flex w-full cursor-pointer items-center gap-2 px-4 pt-3 pb-1 text-left text-sm text-muted-foreground transition-colors hover:text-foreground"
+				>
+					<ChevronRightIcon className="size-4 shrink-0" />
+					<span className="min-w-0 flex-1 truncate">Problem: {firstLine(input.statement)}</span>
+				</button>
+			) : (
+				<div data-dock-scroll-area="" className="max-h-[var(--dock-max-h,40vh)] overflow-y-auto px-4 pt-3 pb-2">
+					{attempted ? (
+						<button
+							type="button"
+							data-testid="practice-statement-toggle"
+							onClick={() => setStatementOpen(false)}
+							className="mb-1 flex cursor-pointer items-center gap-1 text-xs font-medium uppercase tracking-wide text-muted-foreground hover:text-foreground"
+						>
+							<ChevronRightIcon className="size-3.5 rotate-90" />
+							Problem
+						</button>
+					) : (
+						<div className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">Problem</div>
+					)}
+					<div className="lh-prose text-[15px]">
+						<ToolContentResponse>{input.statement}</ToolContentResponse>
+					</div>
 				</div>
-			</div>
+			)}
 
 			{customInput?.editor}
 
@@ -162,7 +198,7 @@ export function PracticeDock({ viewReader, problemCallId, input, expanded, onExp
 				className="m-1.5 rounded-[10px] border border-border/70 bg-background/60 transition-colors focus-within:border-primary/50"
 			>
 				<div className="px-2.5 pt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-					YOUR THINKING
+					{attempted ? "REPLY" : "YOUR THINKING"}
 				</div>
 				<PathInput
 					value={thinking}
@@ -188,7 +224,7 @@ export function PracticeDock({ viewReader, problemCallId, input, expanded, onExp
 							submit();
 						}
 					}}
-					placeholder="Work here, think out loud."
+					placeholder={attempted ? "Answer the follow-up, or try the problem again." : "Work here, think out loud."}
 					className={cn(
 						"field-sizing-content lh-input max-h-64 min-h-16 w-full resize-none bg-transparent px-2.5 pb-2 outline-none placeholder:text-muted-foreground",
 					)}
@@ -208,7 +244,7 @@ export function PracticeDock({ viewReader, problemCallId, input, expanded, onExp
 						onClick={() => submit()}
 						className="ml-auto h-9 rounded-[6px] px-3.5 text-sm font-medium"
 					>
-						{customInput ? "Submit" : "Submit thinking"}
+						{customInput ? "Submit" : attempted ? "Send" : "Submit thinking"}
 					</Button>
 				</div>
 			</div>

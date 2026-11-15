@@ -76,6 +76,25 @@ describe("PracticeDock", () => {
 		assert.match(html, /data-testid="practice-dock-bar"/);
 		assert.match(html, /Show that the sum is even\./);
 	});
+
+	it("attempted: the statement shrinks to one line and the field becomes a reply", () => {
+		const html = renderToStaticMarkup(
+			<PracticeDock
+				problemCallId="call_p1"
+				input={{ statement: "\nShow that the sum is even.\n\nUse parity." }}
+				expanded={true}
+				attempted={true}
+				onExpand={() => {}}
+				onSubmit={() => {}}
+			/>,
+		);
+		assert.match(html, /data-testid="practice-statement-toggle"/);
+		assert.match(html, /Problem: Show that the sum is even\./);
+		assert.ok(!html.includes("Use parity."), "the rest of the statement is hidden");
+		assert.match(html, /REPLY/);
+		assert.ok(!html.includes("YOUR THINKING"));
+		assert.match(html, />Send</);
+	});
 });
 
 // ── the transcript cards ─────────────────────────────────────────────────────

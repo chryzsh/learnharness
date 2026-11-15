@@ -28,7 +28,7 @@ import {
 } from "../src/core/native-messages.ts";
 import { CONCLUDE_ACK_TEXT } from "../src/core/contracts/chat.ts";
 import { dismissAppends, inputAppends, parseChatInput, parseDismissInput } from "../src/core/input-events.ts";
-import { modelSolutionForConclude } from "../src/core/native-messages.ts";
+import { modelSolutionForConclude, problemHasThinking } from "../src/core/native-messages.ts";
 import { projectView } from "../src/core/index.ts";
 
 // ── builders (native-shaped test fixtures) ───────────────────────────────────
@@ -424,5 +424,13 @@ describe("projectView renders the move-on signal", () => {
 			parts.some((p) => p.type === "data-practice-next"),
 			"the data-practice-next part rides the view",
 		);
+	});
+});
+
+describe("problemHasThinking (the dock's reply mode)", () => {
+	it("is true only for a thinking submission on the same problem", () => {
+		assert.equal(problemHasThinking([], "call_p1"), false);
+		assert.equal(problemHasThinking([newThinkingMessage("call_p1", "x")], "call_p1"), true);
+		assert.equal(problemHasThinking([newThinkingMessage("call_p1", "x")], "call_p2"), false);
 	});
 });

@@ -368,6 +368,15 @@ export function newThinkingMessage(problemCallId: string, text: string, images?:
 	};
 }
 
+/** True when the learner already submitted thinking for this problem. */
+export function problemHasThinking(messages: readonly LhMessage[], problemCallId: string): boolean {
+	return messages.some(m => {
+		if ((m as { role?: string }).role !== "custom") return false;
+		const marker = m as LhMarkerMessage;
+		return marker.customType === "practice-thinking" && (marker.details as { problemCallId?: unknown } | undefined)?.problemCallId === problemCallId;
+	});
+}
+
 /** The learner's explicit move-on signal (owner round 16): appended by
  *  the next input (the composer band's chip, or Enter on an empty
  *  composer during the between-problems pause). The content is the

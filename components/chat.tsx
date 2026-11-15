@@ -111,6 +111,7 @@ import { CoverageRing } from "@/components/extraction-coverage";
 import { Button } from "@/components/ui/button";
 import {
 	activeProblemOf,
+	problemHasThinking,
 	pendingQuestionOf,
 	malformedQuestionsOf,
 	dismissedAnswer,
@@ -2058,7 +2059,7 @@ export function Chat({
 					initialQuestionDraft={pending ? questionDraft(pending.key)?.form : undefined}
 					onSaveQuestionDraft={(form) => { if (pending) saveQuestionDraft(pending.key, { form }); }}
 					workingRef={workingRef}
-					practice={activeProblem}
+					practice={activeProblem ? { ...activeProblem, attempted: problemHasThinking(nativeMessages, activeProblem.toolCallId) } : null}
 					pluginPractice={activeProblem?.pluginProblem && activeProblemOccurrence ? {
 						snapshot: activeProblem.pluginProblem, occurrence: activeProblemOccurrence, chatId, draft: pluginProblemDraft(activeProblem.pluginProblem),
 						available: pluginProblemAvailability?.problemId === activeProblem.pluginProblem.problemId && pluginProblemAvailability.status === "available",
@@ -2436,7 +2437,7 @@ export function DockOverlay({
 	/** The ACTIVE practice problem (practice sessions, 2026-10-04):
 	 *  {toolCallId, input} — dock ownership exactly like a pending
 	 *  question (the composer is replaced); null in teaching sessions. */
-	practice: { toolCallId: string; input: unknown } | null;
+	practice: { toolCallId: string; input: unknown; attempted?: boolean } | null;
 	pluginPractice?: Omit<PluginProblemDockProps, "expanded" | "onExpand">;
 	/** (commit, text) — the practice dock's two submit lanes. */
 	onSubmitThinking: (text: string) => void;
@@ -2919,6 +2920,7 @@ export function DockOverlay({
 									viewReader={practiceViewReader}
 									problemCallId={practice.toolCallId}
 									input={practice.input as { statement: string }}
+									attempted={practice.attempted}
 									expanded={expanded}
 									onExpand={() => {
 										setExpanded(true);
