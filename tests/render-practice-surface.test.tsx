@@ -77,6 +77,21 @@ describe("PracticeDock", () => {
 		assert.match(html, /Show that the sum is even\./);
 	});
 
+	it("compactStatement: a one-line toggle replaces the second copy", () => {
+		const html = renderToStaticMarkup(
+			<PracticeDock
+				problemCallId="call_p1"
+				input={{ statement: "Show that the sum is even." }}
+				expanded={true}
+				compactStatement={true}
+				onExpand={() => {}}
+				onSubmit={() => {}}
+			/>,
+		);
+		assert.match(html, /Problem: Show that the sum is even\./);
+		assert.match(html, /YOUR THINKING/);
+	});
+
 	it("attempted: the statement shrinks to one line and the field becomes a reply", () => {
 		const html = renderToStaticMarkup(
 			<PracticeDock
@@ -84,6 +99,7 @@ describe("PracticeDock", () => {
 				input={{ statement: "\n## Show that the **sum** is `even`.\n\nUse parity." }}
 				expanded={true}
 				attempted={true}
+				compactStatement={true}
 				onExpand={() => {}}
 				onSubmit={() => {}}
 			/>,

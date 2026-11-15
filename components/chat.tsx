@@ -2925,6 +2925,7 @@ export function DockOverlay({
 									problemCallId={practice.toolCallId}
 									input={practice.input as { statement: string }}
 									attempted={practice.attempted}
+									compactStatement
 									expanded={expanded}
 									onExpand={() => {
 										setExpanded(true);

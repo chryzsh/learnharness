@@ -64,9 +64,11 @@ export interface PracticeDockProps {
 	 *  this is the affordance. */
 	compactionRunning?: boolean;
 	/** The learner already submitted on this problem: the agent's
-	 *  follow-up is in the chat above, so the statement shrinks to one
-	 *  line and the field becomes a reply. */
+	 *  follow-up is in the chat above, so the field becomes a reply. */
 	attempted?: boolean;
+	/** The transcript card already shows the statement, so the dock shows
+	 *  a one-line toggle instead of a second copy. */
+	compactStatement?: boolean;
 }
 
 /** The first non-empty line of the statement as plain text, for the
@@ -77,7 +79,7 @@ export function firstLine(statement: string): string {
 	return line.replace(/^(#+|>|[-*+]|\d+\.)\s+/, "").replace(/\*\*|__|`/g, "");
 }
 
-export function PracticeDock({ viewReader, problemCallId, input, expanded, onExpand, onSubmit, onPrepareSubmission, customInput, hasPendingInput = false, preparing = false, onEscape, compactionRunning = false, attempted = false }: PracticeDockProps) {
+export function PracticeDock({ viewReader, problemCallId, input, expanded, onExpand, onSubmit, onPrepareSubmission, customInput, hasPendingInput = false, preparing = false, onEscape, compactionRunning = false, attempted = false, compactStatement = false }: PracticeDockProps) {
 	const controller = useOptionalInteractionLayers();
 	const rootRef = useRef<HTMLElement>(null);
 	const [nativeThinking, setNativeThinking] = useState("");
@@ -91,7 +93,8 @@ export function PracticeDock({ viewReader, problemCallId, input, expanded, onExp
 	const editRevision = useRef(0);
 	const [statementOpen, setStatementOpen] = useState(false);
 	useEffect(() => { setStatementOpen(false); }, [problemCallId]);
-	const statementCollapsed = attempted && !statementOpen;
+	const collapsible = compactStatement && !customInput;
+	const statementCollapsed = collapsible && !statementOpen;
 	useLayoutEffect(() => {
 		if (!viewReader) return;
 		const read = () => thinkingRef.current;
@@ -173,7 +176,7 @@ export function PracticeDock({ viewReader, problemCallId, input, expanded, onExp
 				</button>
 			) : (
 				<div data-dock-scroll-area="" className="max-h-[var(--dock-max-h,40vh)] overflow-y-auto px-4 pt-3 pb-2">
-					{attempted ? (
+					{collapsible ? (
 						<button
 							type="button"
 							data-testid="practice-statement-toggle"
