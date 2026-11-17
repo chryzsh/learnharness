@@ -36,6 +36,7 @@ import {
   type StreamdownProps,
 } from "streamdown";
 import { mdComponents } from "@/components/md-blocks";
+import { messageLinkSafety } from "@/components/link-safety-dialog";
 import { repairMathForDisplay, transformMathDelimiters } from "@/src/core";
 
 export type MessageProps = HTMLAttributes<HTMLDivElement> & {
@@ -398,6 +399,7 @@ export const MessageResponse = memo(
         plugins={streamdownPlugins}
         rehypePlugins={streamdownRehypePlugins}
         remend={streamdownRemend}
+        linkSafety={messageLinkSafety}
         {...props}
       >
         {content}
