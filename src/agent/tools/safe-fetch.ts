@@ -1,5 +1,6 @@
+import { lookup as dnsLookup } from "node:dns/promises";
 import { BlockList, isIP } from "node:net";
-import { Agent, buildConnector, fetch as undiciFetch } from "undici";
+import { Agent, buildConnector, ProxyAgent, fetch as undiciFetch } from "undici";
 
 /**
  * Fetch for model-chosen URLs (research web_fetch / web_fetch_pdf): only
@@ -10,6 +11,13 @@ import { Agent, buildConnector, fetch as undiciFetch } from "undici";
  * The check runs on the address each connection actually reaches, after DNS
  * and before any request bytes are sent, so redirects, IP-literal URLs and
  * DNS rebinding all go through it.
+ *
+ * Behind an HTTP proxy (http_proxy / https_proxy, for example on a company
+ * VPN) the connection reaches the proxy, not the site, so that check cannot
+ * run. There, every hop's hostname is resolved and checked before the request
+ * goes to the proxy, and redirects are followed here so each one is checked.
+ * The proxy resolves the name again, so this path does not stop DNS
+ * rebinding; it still stops named, literal and redirected local targets.
  */
 
 const NON_PUBLIC = new BlockList();
@@ -92,13 +100,67 @@ const publicOnly = createAddressCheckedAgent();
  *  reaches these tools, which use undici's own fetch). */
 export const safeFetchOverride: { current?: (url: string, init: RequestInit) => Promise<Response> } = {};
 
+/** The proxy URL that applies to `url`, or undefined for a direct connection.
+ *  Reads http_proxy / https_proxy / no_proxy like curl: a no_proxy entry
+ *  matches the host and its subdomains, and "*" turns the proxy off. */
+export function proxyFor(url: URL, env: NodeJS.ProcessEnv = process.env): string | undefined {
+	const proxy = url.protocol === "https:"
+		? env.https_proxy ?? env.HTTPS_PROXY ?? env.http_proxy ?? env.HTTP_PROXY
+		: env.http_proxy ?? env.HTTP_PROXY;
+	if (!proxy) return undefined;
+	const host = url.hostname.replace(/^\[|\]$/g, "").toLowerCase();
+	const skip = (env.no_proxy ?? env.NO_PROXY ?? "").split(",").map(entry => entry.trim().toLowerCase().replace(/^\*?\./, "")).filter(Boolean);
+	if (skip.some(entry => entry === "*" || host === entry || host.endsWith(`.${entry}`))) return undefined;
+	return proxy;
+}
+
+type Lookup = (hostname: string) => Promise<string[]>;
+const systemLookup: Lookup = async hostname => (await dnsLookup(hostname, { all: true })).map(entry => entry.address);
+
+async function assertPublicHost(hostname: string, allowed: (address: string) => boolean, lookup: Lookup): Promise<void> {
+	const host = hostname.replace(/^\[|\]$/g, "");
+	const addresses = isIP(host) ? [host] : await lookup(host);
+	if (addresses.length === 0 || !addresses.every(allowed)) {
+		throw new BlockedAddressError(`refusing to connect to a private or local address (${host})`);
+	}
+}
+
+const proxyAgents = new Map<string, ProxyAgent>();
+const MAX_REDIRECTS = 20;
+
+/** fetch() through an HTTP proxy, limited to hosts that resolve to public
+ *  addresses. Exported with the check and DNS injectable, for tests. */
+export async function fetchThroughProxy(
+	url: string,
+	init: RequestInit,
+	proxy: string,
+	{ allowed = isPublicAddress, lookup = systemLookup }: { allowed?: (address: string) => boolean; lookup?: Lookup } = {},
+): Promise<Response> {
+	let agent = proxyAgents.get(proxy);
+	if (!agent) proxyAgents.set(proxy, agent = new ProxyAgent(proxy));
+	let current = url;
+	for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+		await assertPublicHost(new URL(current).hostname, allowed, lookup);
+		const response = (await undiciFetch(current, { ...(init as object), redirect: "manual", dispatcher: agent })) as unknown as Response;
+		const location = response.headers.get("location");
+		if (response.status < 300 || response.status > 399 || !location) return response;
+		await response.body?.cancel();
+		current = new URL(location, current).href;
+	}
+	throw new Error(`too many redirects (${url})`);
+}
+
 /** fetch() limited to public addresses. A refusal surfaces as its own
- *  message instead of undici's generic "fetch failed". */
-export async function safeFetch(url: string, init: RequestInit = {}, dispatcher: Agent = publicOnly): Promise<Response> {
+ *  message instead of undici's generic "fetch failed". An explicit
+ *  dispatcher (tests) always connects directly. */
+export async function safeFetch(url: string, init: RequestInit = {}, dispatcher?: Agent): Promise<Response> {
 	if (safeFetchOverride.current) return safeFetchOverride.current(url, init);
+	const proxy = dispatcher ? undefined : proxyFor(new URL(url));
 	try {
-		return (await undiciFetch(url, { ...(init as object), dispatcher })) as unknown as Response;
+		if (proxy) return await fetchThroughProxy(url, init, proxy);
+		return (await undiciFetch(url, { ...(init as object), dispatcher: dispatcher ?? publicOnly })) as unknown as Response;
 	} catch (err) {
+		if (err instanceof BlockedAddressError) throw new Error(err.message);
 		const cause = (err as { cause?: unknown }).cause;
 		if (cause instanceof BlockedAddressError) throw new Error(cause.message);
 		throw err;
