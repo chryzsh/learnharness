@@ -1,22 +1,24 @@
 # Fork notes
 
-This fork runs LearnHarness 0.6.1 with five changes that are not in a release yet.
+This fork runs LearnHarness 0.7.0 with the changes below, which are not in a release yet.
 
 ## What is in the fork
 
-The `dev` branch starts from v0.5.0 (commit `713377f`) and merges five branches. After that, it merges the upstream releases v0.6.0 (commit `a636647`) and v0.6.1 (commit `50b0c42`, 2026-11-14). v0.6.1 has no data format change.
+The `dev` branch merges the upstream releases v0.6.0, v0.6.1 and v0.7.0 (2026-11-22) on top of the fork's own changes.
 
-| Branch | Change |
+| Change | Where |
 | --- | --- |
-| `fix/research-final-brief` | Upstream PR #532. The researcher keeps its last turn to write the brief, so research no longer fails with "the researcher produced no text". |
-| `fix/table-fit-content` | Wide tables wrap their text to fit the chat column instead of running past the edge. |
-| `feat/wider-dock` | The question and composer dock is wider, with a maximum width of 55rem. |
-| `feat/claude-code-models` | The Claude Code model list includes Fable and shows the exact model IDs. |
-| `fix/quiz-option-links` | Links in quiz options show as plain text. On `dev`, commit `598f99f` adds a fix for v0.6.0, which this branch does not have yet. See the next paragraph. |
+| The Claude Code model list shows the exact model IDs as well as the aliases. | `feat/claude-code-models` |
+| Links in quiz options show as plain text, so an option button holds no link button. | `fix/quiz-option-links` |
+| The practice dock turns into a reply field after the first submission, and shows the problem statement as one line. | `dev` only |
+| A link in a chat message opens its "Open external link?" prompt as a dialog, not inside the paragraph. | `fix/link-prompt-in-paragraph` |
+| Research reads web pages through an HTTP proxy when one is set, for example on a company VPN. | `dev` only |
 
-In v0.6.0, `components/md-blocks.tsx` is in an import cycle with `components/question-dock.tsx`. The original quiz fix read `mdComponents` when the module loaded, and that failed with "Cannot access 'mdComponents' before initialization". Commit `598f99f` builds the object on first render instead. If you send `fix/quiz-option-links` upstream, add this fix to it first, because upstream `main` has the same cycle.
+Upstream now has these earlier fork changes, so the fork no longer carries them: the research final brief (v0.7.0 removed the turn limit), wide tables (`fix/table-fit-content`), and the view reader error on reload in dev. The wider dock (`feat/wider-dock`) was dropped, because v0.7.0 sizes the dock to the question.
 
-The `dev`, `fix/table-fit-content` and `fix/quiz-option-links` branches are also on GitHub at `chryzsh/learnharness`. The other branches are local only. The remote `upstream` has push disabled.
+`startfork.sh` sets `NODE_USE_ENV_PROXY=1`, so web search also uses the proxy.
+
+The `dev` branch and several `fix/*` branches are also on GitHub at `chryzsh/learnharness`. The other branches are local only. The remote `upstream` has push disabled.
 
 On `dev` (commit `598f99f`, 2026-11-11), typecheck and lint pass. The tests give 5285 of 5289 passing, with 2 failures and 2 skipped. The two tests that fail also fail on unchanged upstream, because they expect that no `claude` CLI is installed.
 

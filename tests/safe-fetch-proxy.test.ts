@@ -20,7 +20,7 @@ async function connectProxy() {
 	srv.on("connect", (req, client, head) => {
 		state.tunnels++;
 		const [host, port] = (req.url ?? "").split(/:(?=\d+$)/);
-		const upstream = net.connect(Number(port), host.replace(/^\[|\]$/g, ""), () => {
+		const upstream = net.connect(Number(port), (host ?? "").replace(/^\[|\]$/g, ""), () => {
 			client.write("HTTP/1.1 200 Connection Established\r\n\r\n");
 			upstream.write(head);
 			upstream.pipe(client);

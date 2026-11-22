@@ -103,7 +103,7 @@ export const safeFetchOverride: { current?: (url: string, init: RequestInit) => 
 /** The proxy URL that applies to `url`, or undefined for a direct connection.
  *  Reads http_proxy / https_proxy / no_proxy like curl: a no_proxy entry
  *  matches the host and its subdomains, and "*" turns the proxy off. */
-export function proxyFor(url: URL, env: NodeJS.ProcessEnv = process.env): string | undefined {
+export function proxyFor(url: URL, env: Record<string, string | undefined> = process.env): string | undefined {
 	const proxy = url.protocol === "https:"
 		? env.https_proxy ?? env.HTTPS_PROXY ?? env.http_proxy ?? env.HTTP_PROXY
 		: env.http_proxy ?? env.HTTP_PROXY;
